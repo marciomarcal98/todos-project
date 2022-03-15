@@ -24,6 +24,21 @@ function checksExistsUserAccount(request, response, next) {
   return next()
 }
 
+function checkExistsTodo(request, response, next) {
+  const { id } = request.params
+  const { user } = request
+
+  const todo = user.todos.find(todo => todo.id === id)
+
+  if(!todo) {
+    return response.status(404).json({ error: 'To do não encontrada.' })
+  }
+
+  request.todo = todo
+
+  return next()
+}
+
 app.post('/users', (request, response) => {
   const { name, username } = request.body
 
@@ -68,16 +83,9 @@ app.post('/todos', checksExistsUserAccount, (request, response) => {
   return response.status(201).json(todo)
 });
 
-app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
+app.put('/todos/:id', checksExistsUserAccount, checkExistsTodo, (request, response) => {
   const { title, deadline } = request.body
-  const { id } = request.params
-  const { user } = request
-
-  const todo = user.todos.find(todo => todo.id === id)
-
-  if(!todo) {
-    return response.status(404).json({ error: 'To do não encontrado' })
-  }
+  const { todo } = request
 
   todo.title = title
   todo.deadline = new Date(deadline)
@@ -85,30 +93,17 @@ app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
   return response.status(201).json(todo)
 });
 
-app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
-  const { id } = request.params
-  const { user } = request
-
-  const todo = user.todos.find(todo => todo.id === id)
-
-  if(!todo) {
-    return response.status(404).json({ error: 'To do não encontrado' })
-  }
+app.patch('/todos/:id/done', checksExistsUserAccount, checkExistsTodo, (request, response) => {
+  const { todo } = request
 
   todo.done = true
 
   return response.status(201).json(todo)
 });
 
-app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
-  const { id } = request.params
+app.delete('/todos/:id', checksExistsUserAccount, checkExistsTodo, (request, response) => {
+  const { todo } = request
   const { user } = request
-
-  const todo = user.todos.find(todo => todo.id === id)
-
-  if(!todo) {
-    return response.status(404).json({ error: 'To do não encontrado' })
-  }
 
   user.todos.splice(user.todos.indexOf(todo), 1)
 
